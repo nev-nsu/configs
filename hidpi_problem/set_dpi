@@ -1,0 +1,15 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+cp $SCRIPT_DIR/files/$1dpi.sh ~/.xprofile && echo 'copy to xprofile: OK'
+cp $SCRIPT_DIR/files/$1_fonts.conf ~/.config/kcmfonts && echo 'copy fonts config: OK'
+source ~/.xprofile && echo 'source xprofile: OK'
+
+echo 'Wait for reload...' && sleep 5
+kcminit
+killall plasmashell && nohup kstart5 plasmashell  &>/dev/null &
+nohup kwin_x11 --replace  &>/dev/null &
+killall krunner && nohup krunner &>/dev/null &
+killall yakuake && nohup yakuake &>/dev/null &
+nohup kstartupconfig5 &>/dev/null &
