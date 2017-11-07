@@ -33,7 +33,7 @@ setopt hist_reduce_blanks
 
 # VARIABLES
 
-export PATH="$PATH:$HOME/soft/idea/bin:$HOME/soft/clion/bin:$HOME/soft/pycharm/bin:$HOME/soft/idea/bin:$HOME/dev/sh"
+export PATH="$PATH:$HOME/dev/sh:$HOME/soft"
 export VISUAL="vim"
 export EDITOR="vim"
 export TERM=xterm-256color
@@ -66,6 +66,15 @@ fi
 
 eval `dircolors ~/.dir_colors`
 zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+
+export LESS=-R
+export LESS_TERMCAP_me=$(printf '\e[0m')
+export LESS_TERMCAP_se=$(printf '\e[0m')
+export LESS_TERMCAP_ue=$(printf '\e[0m')
+export LESS_TERMCAP_mb=$(printf '\e[1;32m')
+export LESS_TERMCAP_md=$(printf '\e[1;34m')
+export LESS_TERMCAP_us=$(printf '\e[1;32m')
+export LESS_TERMCAP_so=$(printf '\e[1;44;1m')
 
 # PROMPTS
 
@@ -155,4 +164,20 @@ extract () {
   else
     echo "'$1' is not a valid file"
   fi
+}
+
+zmodload zsh/zpty
+
+pty() {
+	zpty pty-${UID} ${1+$@}
+	if [[ ! -t 1 ]];then
+		setopt local_traps
+		trap '' INT
+	fi
+	zpty -r pty-${UID}
+	zpty -d pty-${UID}
+}
+
+ptyless() {
+	pty $@ | less
 }
