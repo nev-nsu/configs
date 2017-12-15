@@ -72,7 +72,7 @@ export LESS_TERMCAP_me=$(printf '\e[0m')
 export LESS_TERMCAP_se=$(printf '\e[0m')
 export LESS_TERMCAP_ue=$(printf '\e[0m')
 export LESS_TERMCAP_mb=$(printf '\e[1;32m')
-export LESS_TERMCAP_md=$(printf '\e[1;34m')
+export LESS_TERMCAP_md=$(printf '\e[1;36m')
 export LESS_TERMCAP_us=$(printf '\e[1;32m')
 export LESS_TERMCAP_so=$(printf '\e[1;44;1m')
 
@@ -100,32 +100,56 @@ fi
 if [ "$EUID" -eq 0 ]; then
     export PROMPT="${host}${red_bold}  [%n${white}:${cyan}%d]${reset} >"
 else
-    export PROMPT="${host}${green}%n${white}:${cyan}%d${white}> ${reset}"
+    export PROMPT="${host}${green_bold}%n${white}:${cyan}%d${white}> ${reset}"
 fi
 
-# export RPROMPT="${yellow}%T${reset}"
 unset RPROMPT
 
 SPROMPT="Did you mean ${green}%r${reset} instead of ${red_bold}%R${reset}? "
 
 # KEY BINDINGS
 
-[[ -n "${key[Home]}"     ]]  && bindkey  "${key[Home]}"     beginning-of-line
-[[ -n "${key[End]}"      ]]  && bindkey  "${key[End]}"      end-of-line
-[[ -n "${key[Insert]}"   ]]  && bindkey  "${key[Insert]}"   overwrite-mode
-[[ -n "${key[Delete]}"   ]]  && bindkey  "${key[Delete]}"   delete-char
-[[ -n "${key[Up]}"       ]]  && bindkey  "${key[Up]}"       up-line-or-history
-[[ -n "${key[Down]}"     ]]  && bindkey  "${key[Down]}"     down-line-or-history
-[[ -n "${key[Left]}"     ]]  && bindkey  "${key[Left]}"     backward-char
-[[ -n "${key[Right]}"    ]]  && bindkey  "${key[Right]}"    forward-char
-[[ -n "${key[PageUp]}"   ]]  && bindkey  "${key[PageUp]}"   beginning-of-buffer-or-history
-[[ -n "${key[PageDown]}" ]]  && bindkey  "${key[PageDown]}" end-of-buffer-or-history
+autoload zkbd
+function zkbd_file() {
+    [[ -f ~/.zkbd/${TERM}-${VENDOR}-${OSTYPE} ]] && printf '%s' ~/".zkbd/${TERM}-${VENDOR}-${OSTYPE}" && return 0
+    [[ -f ~/.zkbd/${TERM}-${DISPLAY}          ]] && printf '%s' ~/".zkbd/${TERM}-${DISPLAY}"          && return 0
+    return 1
+}
+
+[[ ! -d ~/.zkbd ]] && mkdir ~/.zkbd
+keyfile=$(zkbd_file)
+ret=$?
+if [[ ${ret} -ne 0 ]]; then
+    zkbd
+    keyfile=$(zkbd_file)
+    ret=$?
+fi
+if [[ ${ret} -eq 0 ]] ; then
+    source "${keyfile}"
+else
+    printf 'Failed to setup keys using zkbd.\n'
+fi
+unfunction zkbd_file; unset keyfile ret
+
+# setup key accordingly
+[[ -n "$key[Home]"      ]] && bindkey -- "$key[Home]"      beginning-of-line
+[[ -n "$key[End]"       ]] && bindkey -- "$key[End]"       end-of-line
+[[ -n "$key[Insert]"    ]] && bindkey -- "$key[Insert]"    overwrite-mode
+[[ -n "$key[Backspace]" ]] && bindkey -- "$key[Backspace]" backward-delete-char
+[[ -n "$key[Delete]"    ]] && bindkey -- "$key[Delete]"    delete-char
+[[ -n "$key[Left]"      ]] && bindkey -- "$key[Left]"      backward-char
+[[ -n "$key[Right]"     ]] && bindkey -- "$key[Right]"     forward-char
+
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+
+[[ -n "$key[Up]"   ]] && bindkey -- "$key[Up]"   up-line-or-beginning-search
+[[ -n "$key[Down]" ]] && bindkey -- "$key[Down]" down-line-or-beginning-search
 
 bindkey '^[[1;5D'   backward-word
 bindkey '^[[1;5C'   forward-word
-
-[[ -n "${key[PageUp]}"   ]]  && bindkey  "${key[PageUp]}"    history-beginning-search-backward
-[[ -n "${key[PageDown]}" ]]  && bindkey  "${key[PageDown]}"  history-beginning-search-forward
+bindkey '^[[3;5~'   kill-word
 
 zmodload zsh/complist
 bindkey -M menuselect "^M" .accept-line
@@ -141,6 +165,8 @@ alias df='df -h'
 alias pacman='sudo pacman'
 alias yaourt-clean='yaourt -Rns $(pacman -Qtdq)'
 alias yaourt-list='yaourt -Qet'
+
+alias cat='vimcat'
 
 # FUNCTIONS
 
